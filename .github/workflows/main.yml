@@ -1,0 +1,49 @@
+name: Full CI/CD Pipeline
+
+# When should the robot run? Every time we push to the main branch.
+on:
+  push:
+    branches:
+      - main
+
+# Give the robot permission to publish our website
+permissions:
+  contents: write
+
+jobs:
+  # Stage 1: Continuous Integration (Test)
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Verify Secret
+        run: echo "The secret is safely accessed by the robot!"
+        env:
+          MY_SECRET: ${{ secrets.API_KEY }}
+
+  # Stage 2: Continuous Deployment (Publish)
+  deploy:
+    needs: build-and-test # Do not deploy if tests fail!
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
